@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Relier les mots aux images</title>
+<style>
+  :root{--gap:14px;--radius:14px;--shadow:0 6px 20px rgba(0,0,0,.08)}
+  *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  body{margin:0;background:#f6f8fb;color:#1f2937}
+  .wrap{max-width:1100px;margin:auto;padding:20px}
+  .board{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+  .col{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+  h1{font-size:20px;margin:0 0 10px}
+  .words{display:flex;flex-direction:column;gap:10px;min-height:420px}
+  .word{padding:10px 12px;border-radius:12px;background:#eef2ff;border:2px solid #c7d2fe;cursor:grab;
+        user-select:none;font-weight:600}
+  .word:active{cursor:grabbing}
+  .targets{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+  .target{position:relative;border:2px dashed #d1d5db;border-radius:12px;overflow:hidden;background:#fafafa;}
+  .target img{width:100%;height:120px;object-fit:cover;display:block}
+  .badge{position:absolute;inset:auto 8px 8px auto;background:#111827;color:#fff;font-size:12px;
+         padding:4px 8px;border-radius:999px;opacity:.85}
+  .slot{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+        font-weight:700;color:#6b7280}
+  .slot.filled{color:#10b981}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  button{border:0;border-radius:12px;padding:10px 14px;font-weight:700;box-shadow:var(--shadow);cursor:pointer}
+  .primary{background:#4f46e5;color:#fff}
+  .ghost{background:#e5e7eb}
+  .ok{background:#10b981;color:#fff}
+  .ko{background:#ef4444;color:#fff}
+  .msg{margin-left:auto;font-weight:700}
+  .hidden{display:none}
+  .small{font-size:12px;color:#6b7280;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Relie chaque <u>mot</u> à la <u>bonne image</u></h1>
+
+  <!-- Configuration (pairs) -->
+  <script>
+  // ⚙️ CONFIG — édite ici tes paires (id = identifiants uniques)
+  const PAIRS = [
+    { id: "chat",   word: "chat",   img: "https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=800" },
+    { id: "pomme",  word: "pomme",  img: "https://images.unsplash.com/photo-1570913149827-d2ac84ab3f9a?w=800" },
+    { id: "voiture",word: "voiture",img: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800" }
+  ];
+  // Optionnel : sons par mot (cliquer un mot joue le son)
+  const AUDIO = {
+    // "chat": "https://…/chat.mp3",
+    // "pomme": "https://…/pomme.mp3",
+    // "voiture": "https://…/voiture.mp3"
+  };
+  </script>
+
+  <div class="board">
+    <div class="col">
+      <h1>Mots</h1>
+      <div id="words" class="words"></div>
+      <div class="small">Astuce : fais glisser un mot et dépose-le sur l’image correspondante.</div>
+    </div>
+
+    <div class="col">
+      <h1>Images</h1>
+      <div id="targets" class="targets"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <button id="check" class="primary">Vérifier</button>
+    <button id="reset" class="ghost">Recommencer</button>
+    <div id="msg" class="msg"></div>
+  </div>
+</div>
+
+<script>
+  // ——— Rendu initial
+  const $words = document.getElementById("words");
+  const $targets = document.getElementById("targets");
+
+  // Mélange simple
+  const shuffled = PAIRS.slice().sort(()=>Math.random()-0.5);
+
+  // Crée mots (draggables)
+  shuffled.forEach(p=>{
+    const el = document.createElement("div");
+    el.className = "word";
+    el.textContent = p.word;
+    el.draggable = true;
+    el.dataset.id = p.id;
+    if (AUDIO[p.id]) {
+      el.title = "Clique pour écouter";
+      el.addEventListener("click", e=>{
+        e.stopPropagation();
+        new Audio(AUDIO[p.id]).play().catch(()=>{});
+      });
+    }
+    el.addEventListener("dragstart", ev=>{
+      ev.dataTransfer.setData("text/plain", p.id);
+      // visuel
+      setTimeout(()=>el.style.opacity=.5,0);
+    });
+    el.addEventListener("dragend", ()=> el.style.opacity=1);
+    $words.appendChild(el);
+  });
+
+  // Crée cibles (dropzones)
+  PAIRS.slice().sort(()=>Math.random()-0.5).forEach(p=>{
+    const box = document.createElement("div");
+    box.className = "target";
+    box.dataset.accept = p.id;
+
+    const img = document.createElement("img");
+    img.src = p.img; img.alt = p.word;
+
+    const badge = document.createElement("span");
+    badge.className = "badge"; badge.textContent = p.word; // ou masque si tu veux
+
+    const slot = document.createElement("div");
+    slot.className = "slot"; slot.textContent = "Dépose ici"; // change en “✔” quand rempli
+
+    box.append(img, badge, slot);
+
+    // DnD
+    ["dragenter","dragover"].forEach(evt=>{
+      box.addEventListener(evt, e=>{ e.preventDefault(); box.style.borderColor="#4f46e5"; });
+    });
+    ["dragleave","drop"].forEach(evt=>{
+      box.addEventListener(evt, e=>{ e.preventDefault(); box.style.borderColor="#d1d5db"; });
+    });
+    box.addEventListener("drop", e=>{
+      const id = e.dataTransfer.getData("text/plain");
+      // Déjà rempli ? on remet le précédent dans la colonne
+      const prev = box.querySelector(".word");
+      if (prev) $words.appendChild(prev);
+
+      const dragged = [...document.querySelectorAll(".word")].find(w=>w.dataset.id===id);
+      if (dragged) {
+        box.appendChild(dragged);
+        dragged.style.margin = "8px";
+        dragged.style.width = "calc(100% - 16px)";
+        box.querySelector(".slot").classList.add("filled");
+        box.querySelector(".slot").textContent = "✔";
+      }
+    });
+
+    $targets.appendChild(box);
+  });
+
+  // Vérification
+  const $msg = document.getElementById("msg");
+  document.getElementById("check").addEventListener("click", ()=>{
+    let ok = 0;
+    document.querySelectorAll(".target").forEach(t=>{
+      const w = t.querySelector(".word");
+      const correct = w && w.dataset.id === t.dataset.accept;
+      t.style.borderColor = correct ? "#10b981" : "#ef4444";
+      ok += correct ? 1 : 0;
+    });
+    if (ok === PAIRS.length) {
+      $msg.textContent = "Bravo ! Tout est correct 🎉";
+      $msg.className = "msg ok";
+    } else {
+      $msg.textContent = `${ok}/${PAIRS.length} correct(s). Essaie encore.`;
+      $msg.className = "msg ko";
+    }
+  });
+
+  // Reset
+  document.getElementById("reset").addEventListener("click", ()=>{
+    $msg.textContent = ""; $msg.className = "msg";
+    document.querySelectorAll(".target").forEach(t=>{
+      t.style.borderColor = "#d1d5db";
+      t.querySelector(".slot").classList.remove("filled");
+      t.querySelector(".slot").textContent = "Dépose ici";
+      const w = t.querySelector(".word");
+      if (w) { w.style.margin=""; w.style.width=""; $words.appendChild(w); }
+    });
+  });
+</script>
+</body>
+</html>
