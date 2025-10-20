@@ -9,26 +9,29 @@
   *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
   body{margin:0;background:#f6f8fb;color:#1f2937}
   .wrap{max-width:1100px;margin:auto;padding:20px}
-  .board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
-  .col{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
   h1{font-size:20px;margin:0 0 10px}
 
-  /* images (gauche) */
-  .images{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
-  .imgbox{position:relative;border:2px dashed #d1d5db;border-radius:12px;overflow:hidden;background:#fafafa;}
-  .imgbox img{width:100%;height:120px;object-fit:cover;display:block}
+  .board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+  .col{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+
+  /* Images (gauche) */
+  .images{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+  .imgbox{position:relative;border:2px dashed #d1d5db;border-radius:12px;overflow:hidden;background:#fafafa;min-height:140px}
+  .imgbox img{width:100%;height:140px;object-fit:cover;display:block}
   .imgbox.drop-ok{border-color:#4f46e5}
 
-  /* mots (droite) */
-  .words{display:flex;flex-direction:column;gap:10px;min-height:420px}
+  /* Mots (droite) */
+  .words{display:flex;flex-direction:column;gap:12px;min-height:420px}
   .word{padding:10px 12px;border-radius:12px;background:#eef2ff;border:2px solid #c7d2fe;cursor:grab;
-        user-select:none;font-weight:600;width:220px}
+        user-select:none;font-weight:600;width:240px}
   .word.dragging{opacity:.5}
+  .word img{width:100%;height:auto;display:block;border-radius:8px}
 
-  /* flèches (droites) */
+  /* Lignes */
   svg#lines{position:absolute;inset:0;pointer-events:none}
   line.arrow{stroke:#4f46e5;stroke-width:3;marker-end:url(#arrowhead)}
 
+  /* Barre d’actions */
   .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
   button{border:0;border-radius:12px;padding:10px 14px;font-weight:700;box-shadow:var(--shadow);cursor:pointer}
   .primary{background:#4f46e5;color:#fff}
@@ -36,18 +39,23 @@
   .ok{background:#10b981;color:#fff}
   .ko{background:#ef4444;color:#fff}
   .msg{margin-left:auto;font-weight:700}
+  .hint{font-size:12px;color:#6b7280;margin-top:6px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Relie chaque <u>image</u> au <u>bon mot</u></h1>
 
-  <!-- ⚙️ CONFIG : mets tes URL Dropbox (format ?raw=1) -->
+  <!-- ⚙️ CONFIG : remplace par tes fichiers dans /assets -->
   <script>
   const PAIRS = [
-    { id:"markabon",    img:"assets/markabon_p.jpg",  word:"assets/markabon.jpg"},
-    { id:"mi7fathaton",   img:"assets/mi7fathaton_p.jpg",   word:"assets/mi7fathaton.jpg"},
-    { id:"mou3alimaton", img:"assets/mou3alimaton_p.jpg",  word:"assets/mou3alimaton.jpg"}
+    // id = identifiant commun image/mot (sans espaces)
+    // img = image de gauche (ex: "assets/chat.jpg")
+    // word = texte du mot (si tu n’as pas d’image de mot)
+    // wordImg = image du mot (facultatif, remplace le texte si fourni)
+    { id:"markabon",    img:"assets/markabon_p.jpg", wordImg:"assets/markabon.png"},
+    { id:"mi7fathaton", img:"assets/mi7fathaton_p.jpg", wordImg:"assets/mi7fathaton.png" },
+    { id:"mou3alimaton",img:"assets/mou3alimaton_p.jpg",wordImg:"assets/mou3alimaton.png" }
   ];
   </script>
 
@@ -61,13 +69,14 @@
       </defs>
     </svg>
 
-    <!-- Colonne gauche : IMAGES (cibles) -->
+    <!-- Colonne gauche : IMAGES -->
     <div class="col">
       <h1>Images</h1>
       <div id="images" class="images"></div>
+      <div class="hint">Dépose un mot sur l’image correspondante.</div>
     </div>
 
-    <!-- Colonne droite : MOTS (à glisser) -->
+    <!-- Colonne droite : MOTS -->
     <div class="col">
       <h1>Mots</h1>
       <div id="words" class="words"></div>
@@ -100,8 +109,8 @@
     return { x: r2.left - r1.left + r2.width/2, y: r2.top - r1.top + r2.height/2 };
   }
 
-  // Rendu des images (cibles à gauche)
-  PAIRS.slice().forEach(p=>{
+  // --- Rendu images (cibles, à gauche)
+  PAIRS.forEach(p=>{
     const box = document.createElement("div");
     box.className = "imgbox";
     box.dataset.accept = p.id;
@@ -125,13 +134,20 @@
     $images.appendChild(box);
   });
 
-  // Rendu des mots (draggables à droite)
+  // --- Rendu mots (draggables, à droite)
   PAIRS.slice().sort(()=>Math.random()-0.5).forEach(p=>{
     const el = document.createElement("div");
     el.className = "word";
-    el.textContent = p.word;
     el.draggable = true;
     el.dataset.id = p.id;
+
+    if (p.wordImg) {
+      const wi = document.createElement("img");
+      wi.src = p.wordImg; wi.alt = p.word || p.id;
+      el.appendChild(wi);
+    } else {
+      el.textContent = p.word || p.id;
+    }
 
     el.addEventListener("dragstart", ev=>{
       ev.dataTransfer.setData("text/plain", p.id);
@@ -142,13 +158,13 @@
     $words.appendChild(el);
   });
 
-  // Dessin des droites
+  // --- Dessin des droites
   function drawAll(){
     resizeSVG();
     $lines.querySelectorAll("line.arrow").forEach(n=>n.remove());
     for(const [wordId,imageId] of map.entries()){
-      const wordEl  = [...document.querySelectorAll(".word")].find(w=>w.dataset.id===wordId);
-      const imgBox  = [...document.querySelectorAll(".imgbox")].find(b=>b.dataset.accept===imageId);
+      const wordEl = [...document.querySelectorAll(".word")].find(w=>w.dataset.id===wordId);
+      const imgBox = [...document.querySelectorAll(".imgbox")].find(b=>b.dataset.accept===imageId);
       if(!wordEl || !imgBox) continue;
       const a = center(wordEl);
       const b = center(imgBox);
@@ -160,7 +176,7 @@
     }
   }
 
-  // Vérifier
+  // --- Vérifier
   const $msg = document.getElementById("msg");
   document.getElementById("check").addEventListener("click", ()=>{
     let ok = 0;
@@ -175,7 +191,7 @@
     else { $msg.textContent = `${ok}/${PAIRS.length} correct(s)`; $msg.className = "msg ko"; }
   });
 
-  // Reset
+  // --- Reset
   document.getElementById("reset").addEventListener("click", ()=>{
     map.clear(); $msg.textContent = ""; $msg.className = "msg";
     document.querySelectorAll(".imgbox").forEach(t=> t.style.borderColor = "#d1d5db");
