@@ -3,83 +3,99 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Relier images → mots (ligne droite)</title>
+<title>Relier images ↔ mots (clic-clic, pastilles & lignes)</title>
 <style>
-  :root{--gap:14px;--radius:14px;--shadow:0 6px 20px rgba(0,0,0,.08)}
+  :root{
+    --gap:16px; --radius:16px; --shadow:0 6px 20px rgba(0,0,0,.08);
+    --obj-border:#93c5fd;   /* bleu clair objets */
+    --word-border:#f9a8d4;  /* rose clair mots */
+    --line:#4f46e5;         /* indigo lignes */
+    --ok:#10b981; --ko:#ef4444;
+  }
   *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
   body{margin:0;background:#f6f8fb;color:#1f2937}
   .wrap{max-width:1100px;margin:auto;padding:20px}
-  h1{font-size:20px;margin:0 0 10px}
+  h1{font-size:20px;margin:0 0 14px}
 
-  .board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+  /* Grille principale */
+  .board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);align-items:start}
   .col{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+  .title{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+  .title .dot{width:10px;height:10px;border-radius:999px;display:inline-block}
+  .dot.obj{background:var(--obj-border)}
+  .dot.word{background:var(--word-border)}
 
-  /* Images (gauche) */
-  .images{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
-  .imgbox{position:relative;border:2px dashed #d1d5db;border-radius:12px;overflow:hidden;background:#fafafa;min-height:140px}
-  .imgbox img{width:100%;height:140px;object-fit:cover;display:block}
-  .imgbox.drop-ok{border-color:#4f46e5}
+  /* Cartes */
+  .list{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+  .card{
+    position:relative;border-radius:14px;overflow:hidden;background:#fafafa;
+    transition:transform .08s ease;border:2px solid transparent;min-height:150px
+  }
+  .card:hover{transform:translateY(-1px)}
+  .card .img{width:100%;height:150px;object-fit:cover;display:block}
+  .card .label{position:absolute;inset:auto 10px 10px auto;background:#111827;color:#fff;
+               font-size:12px;padding:4px 8px;border-radius:999px;opacity:.8}
+  /* Différenciation visuelle */
+  .card.obj{border-color:var(--obj-border); background:#f0f7ff}
+  .card.word{border-color:var(--word-border); background:#fff0f6}
 
-  /* Mots (droite) */
-  .words{display:flex;flex-direction:column;gap:12px;min-height:420px}
-  .word{padding:10px 12px;border-radius:12px;background:#eef2ff;border:2px solid #c7d2fe;cursor:grab;
-        user-select:none;font-weight:600;width:240px}
-  .word.dragging{opacity:.5}
-  .word img{width:100%;height:auto;display:block;border-radius:8px}
+  /* Pastilles cliquables */
+  .pin{
+    position:absolute;top:50%;transform:translateY(-50%);width:18px;height:18px;border-radius:999px;
+    border:3px solid #fff; box-shadow:0 0 0 2px rgba(0,0,0,.08); cursor:pointer;
+    background:var(--line);
+  }
+  .pin.left{left:-9px}   /* sort un peu du cadre */
+  .pin.right{right:-9px}
+  .pin.active{box-shadow:0 0 0 4px rgba(79,70,229,.25)}
 
-  /* Lignes */
+  /* Couche des lignes */
   svg#lines{position:absolute;inset:0;pointer-events:none}
-  line.arrow{stroke:#4f46e5;stroke-width:3;marker-end:url(#arrowhead)}
+  line.link{stroke:var(--line);stroke-width:3;stroke-linecap:round}
+  circle.endcap{fill:#fff;stroke:var(--line);stroke-width:2}
 
   /* Barre d’actions */
   .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
   button{border:0;border-radius:12px;padding:10px 14px;font-weight:700;box-shadow:var(--shadow);cursor:pointer}
   .primary{background:#4f46e5;color:#fff}
   .ghost{background:#e5e7eb}
-  .ok{background:#10b981;color:#fff}
-  .ko{background:#ef4444;color:#fff}
+  .ok{background:var(--ok);color:#fff}
+  .ko{background:var(--ko);color:#fff}
   .msg{margin-left:auto;font-weight:700}
   .hint{font-size:12px;color:#6b7280;margin-top:6px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Relie chaque <u>image</u> au <u>bon mot</u></h1>
+  <h1>Relie chaque <u>image</u> au <u>bon mot</u> (clique les pastilles)</h1>
 
-  <!-- ⚙️ CONFIG : remplace par tes fichiers dans /assets -->
+  <!-- ⚙️ CONFIG — remplace par tes chemins (dans /assets de ton repo) -->
   <script>
   const PAIRS = [
-    // id = identifiant commun image/mot (sans espaces)
-    // img = image de gauche (ex: "assets/chat.jpg")
-    // word = texte du mot (si tu n’as pas d’image de mot)
-    // wordImg = image du mot (facultatif, remplace le texte si fourni)
-    { id:"markabon",    img:"assets/markabon_p.jpg", wordImg:"assets/markabon.png"},
-    { id:"mi7fathaton", img:"assets/mi7fathaton_p.jpg", wordImg:"assets/mi7fathaton.png" },
-    { id:"mou3alimaton",img:"assets/mou3alimaton_p.jpg",wordImg:"assets/mou3alimaton.png" }
+    // id = identifiant commun objet/mot (sans espace)
+    // imgObj  = photo de l'objet (colonne gauche)
+    // imgWord = image du mot (colonne droite)
+    { id:"markabon",    imgObj:"assets/markabon_p.jpg",    imgWord:"assets/markabon.png" },
+    { id:"mi7fathaton", imgObj:"assets/mi7fathaton_p.jpg", imgWord:"assets/mi7fathaton.png" },
+    { id:"mou3alimaton",imgObj:"assets/mou3alimaton_p.jpg",imgWord:"assets/mou3alimaton.png" }
   ];
   </script>
 
   <div class="board" id="board">
-    <!-- couche lignes -->
-    <svg id="lines" viewBox="0 0 100 100" preserveAspectRatio="none">
-      <defs>
-        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-          <polygon points="0 0, 10 3.5, 0 7" fill="#4f46e5"></polygon>
-        </marker>
-      </defs>
-    </svg>
+    <!-- Lignes -->
+    <svg id="lines" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
 
-    <!-- Colonne gauche : IMAGES -->
+    <!-- Colonne gauche : OBJETS -->
     <div class="col">
-      <h1>Images</h1>
-      <div id="images" class="images"></div>
-      <div class="hint">Dépose un mot sur l’image correspondante.</div>
+      <div class="title"><span class="dot obj"></span><strong>Images (objets)</strong></div>
+      <div id="left" class="list"></div>
+      <div class="hint">Clique la pastille ➜ puis la pastille correspondante à droite.</div>
     </div>
 
-    <!-- Colonne droite : MOTS -->
+    <!-- Colonne droite : MOTS (images) -->
     <div class="col">
-      <h1>Mots</h1>
-      <div id="words" class="words"></div>
+      <div class="title"><span class="dot word"></span><strong>Mots (images)</strong></div>
+      <div id="right" class="list"></div>
     </div>
   </div>
 
@@ -91,113 +107,191 @@
 </div>
 
 <script>
-  const $board  = document.getElementById("board");
-  const $lines  = document.getElementById("lines");
-  const $images = document.getElementById("images");
-  const $words  = document.getElementById("words");
-  const map = new Map(); // wordId -> imageId
+  /* ========= Données & éléments ========= */
+  const $board = document.getElementById('board');
+  const $lines = document.getElementById('lines');
+  const $left  = document.getElementById('left');
+  const $right = document.getElementById('right');
+  const map = new Map();         // wordId -> objId
+  const pins = new Map();        // id -> { type:'obj'|'word', elPin, elCard }
+  let startPin = null;           // pastille cliquée en premier
+  let rafId = 0;
+  let preview = null;            // { line, a:{x,y}, b:{x,y} }
 
+  /* ========= Helpers ========= */
   function resizeSVG(){
     const r = $board.getBoundingClientRect();
-    $lines.setAttribute("viewBox", `0 0 ${r.width} ${r.height}`);
+    $lines.setAttribute('viewBox', `0 0 ${r.width} ${r.height}`);
   }
-  window.addEventListener("resize", ()=>{ resizeSVG(); drawAll(); });
-
-  function center(el){
-    const r1 = $board.getBoundingClientRect();
-    const r2 = el.getBoundingClientRect();
-    return { x: r2.left - r1.left + r2.width/2, y: r2.top - r1.top + r2.height/2 };
+  function center(el){ // centre absolu (coordonnées relatives au board)
+    const rb = $board.getBoundingClientRect();
+    const r  = el.getBoundingClientRect();
+    return { x: r.left - rb.left + r.width/2, y: r.top - rb.top + r.height/2 };
+  }
+  function makeCard(id, src, kind){ // kind: 'obj' | 'word'
+    const card = document.createElement('div');
+    card.className = `card ${kind}`;
+    const img = document.createElement('img');
+    img.className = 'img';
+    img.decoding = 'async';
+    img.loading = 'lazy';
+    img.src = src; img.alt = id;
+    const pin = document.createElement('button');
+    pin.type = 'button';
+    pin.className = 'pin ' + (kind==='obj' ? 'right' : 'left');
+    pin.setAttribute('aria-label', `Point ${kind} ${id}`);
+    card.append(img, pin);
+    return { card, pin, img };
+  }
+  function addEndcaps(x1,y1,x2,y2){
+    const a = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    a.setAttribute('cx',x1); a.setAttribute('cy',y1); a.setAttribute('r',6);
+    a.setAttribute('class','endcap');
+    const b = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    b.setAttribute('cx',x2); b.setAttribute('cy',y2); b.setAttribute('r',6);
+    b.setAttribute('class','endcap');
+    return [a,b];
+  }
+  function linkCoords(pinFrom, pinTo){
+    return { a: center(pinFrom), b: center(pinTo) };
   }
 
-  // --- Rendu images (cibles, à gauche)
+  /* ========= Construction interface ========= */
+  // Colonne gauche (objets)
   PAIRS.forEach(p=>{
-    const box = document.createElement("div");
-    box.className = "imgbox";
-    box.dataset.accept = p.id;
-
-    const img = document.createElement("img");
-    img.src = p.img; img.alt = p.id;
-
-    ["dragenter","dragover"].forEach(evt=>{
-      box.addEventListener(evt, e=>{ e.preventDefault(); box.classList.add("drop-ok"); });
-    });
-    ["dragleave","drop"].forEach(evt=>{
-      box.addEventListener(evt, e=>{ e.preventDefault(); box.classList.remove("drop-ok"); });
-    });
-    box.addEventListener("drop", e=>{
-      const wordId = e.dataTransfer.getData("text/plain");
-      map.set(wordId, p.id); // relie ce mot à cette image
-      drawAll();
-    });
-
-    box.appendChild(img);
-    $images.appendChild(box);
+    const {card, pin} = makeCard(p.id, p.imgObj, 'obj');
+    $left.appendChild(card);
+    pins.set(`obj:${p.id}`, {type:'obj', elPin:pin, elCard:card, id:p.id});
   });
-
-  // --- Rendu mots (draggables, à droite)
+  // Colonne droite (mots-images)
   PAIRS.slice().sort(()=>Math.random()-0.5).forEach(p=>{
-    const el = document.createElement("div");
-    el.className = "word";
-    el.draggable = true;
-    el.dataset.id = p.id;
-
-    if (p.wordImg) {
-      const wi = document.createElement("img");
-      wi.src = p.wordImg; wi.alt = p.word || p.id;
-      el.appendChild(wi);
-    } else {
-      el.textContent = p.word || p.id;
-    }
-
-    el.addEventListener("dragstart", ev=>{
-      ev.dataTransfer.setData("text/plain", p.id);
-      el.classList.add("dragging");
-    });
-    el.addEventListener("dragend", ()=> el.classList.remove("dragging"));
-
-    $words.appendChild(el);
+    const {card, pin} = makeCard(p.id, p.imgWord, 'word');
+    $right.appendChild(card);
+    pins.set(`word:${p.id}`, {type:'word', elPin:pin, elCard:card, id:p.id});
   });
 
-  // --- Dessin des droites
-  function drawAll(){
-    resizeSVG();
-    $lines.querySelectorAll("line.arrow").forEach(n=>n.remove());
-    for(const [wordId,imageId] of map.entries()){
-      const wordEl = [...document.querySelectorAll(".word")].find(w=>w.dataset.id===wordId);
-      const imgBox = [...document.querySelectorAll(".imgbox")].find(b=>b.dataset.accept===imageId);
-      if(!wordEl || !imgBox) continue;
-      const a = center(wordEl);
-      const b = center(imgBox);
-      const L = document.createElementNS("http://www.w3.org/2000/svg","line");
-      L.classList.add("arrow");
-      L.setAttribute("x1",a.x); L.setAttribute("y1",a.y);
-      L.setAttribute("x2",b.x); L.setAttribute("y2",b.y);
-      $lines.appendChild(L);
+  resizeSVG();
+  window.addEventListener('resize', ()=>{ resizeSVG(); drawAll(); });
+
+  /* ========= Interaction clic-clic ========= */
+  // start -> preview -> end (opposé)
+  pins.forEach(({elPin})=>{
+    elPin.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const key = [...pins.entries()].find(([,v])=>v.elPin===elPin)[0];
+      const cur = pins.get(key);
+
+      if(!startPin){
+        // début d’un lien
+        startPin = cur;
+        elPin.classList.add('active');
+        startPreview(elPin);
+      }else{
+        // tentative d’arrivée
+        if(startPin.type === cur.type){
+          // même colonne : on redémarre depuis ce point
+          clearPreview();
+          startPin.elPin.classList.remove('active');
+          startPin = cur;
+          elPin.classList.add('active');
+          startPreview(elPin);
+          return;
+        }
+        // ok, on crée/replace le lien (word -> obj)
+        const word = (startPin.type==='word') ? startPin : cur;
+        const obj  = (startPin.type==='obj')  ? startPin : cur;
+        map.set(word.id, obj.id);
+        clearPreview();
+        startPin.elPin.classList.remove('active');
+        startPin = null;
+        drawAll();
+      }
+    });
+  });
+
+  // aperçu de ligne pendant le déplacement de la souris
+  function startPreview(fromPinEl){
+    const l = document.createElementNS('http://www.w3.org/2000/svg','line');
+    l.setAttribute('class','link');
+    $lines.appendChild(l);
+    preview = { line:l, fromEl:fromPinEl, mouse:{x:0,y:0} };
+
+    const move = (ev)=>{
+      preview.mouse.x = ev.clientX;
+      preview.mouse.y = ev.clientY;
+      if(!rafId){
+        rafId = requestAnimationFrame(()=>{
+          rafId = 0;
+          const a = center(fromPinEl);
+          const rb = $board.getBoundingClientRect();
+          const b = { x: preview.mouse.x - rb.left, y: preview.mouse.y - rb.top };
+          l.setAttribute('x1',a.x); l.setAttribute('y1',a.y);
+          l.setAttribute('x2',b.x); l.setAttribute('y2',b.y);
+        });
+      }
+    };
+    const stop = ()=>{
+      document.removeEventListener('mousemove', move, {passive:true});
+      document.removeEventListener('mouseleave', stop);
+    };
+    document.addEventListener('mousemove', move, {passive:true});
+    document.addEventListener('mouseleave', stop);
+  }
+  function clearPreview(){
+    if(preview){
+      preview.line.remove();
+      preview = null;
     }
   }
 
-  // --- Vérifier
-  const $msg = document.getElementById("msg");
-  document.getElementById("check").addEventListener("click", ()=>{
+  /* ========= Dessin des liens définitifs ========= */
+  function drawAll(){
+    // nettoie tout
+    while($lines.firstChild) $lines.firstChild.remove();
+
+    // redessine toutes les liaisons word -> obj
+    for(const [wordId,objId] of map.entries()){
+      const w = pins.get(`word:${wordId}`)?.elPin;
+      const o = pins.get(`obj:${objId}`)?.elPin;
+      if(!w || !o) continue;
+
+      const {a,b} = linkCoords(w,o);
+      const L = document.createElementNS('http://www.w3.org/2000/svg','line');
+      L.setAttribute('class','link');
+      L.setAttribute('x1',a.x); L.setAttribute('y1',a.y);
+      L.setAttribute('x2',b.x); L.setAttribute('y2',b.y);
+      const [c1,c2] = addEndcaps(a.x,a.y,b.x,b.y);
+      $lines.append(L,c1,c2);
+    }
+  }
+
+  /* ========= Vérifier & Reset ========= */
+  const $msg = document.getElementById('msg');
+  document.getElementById('check').addEventListener('click', ()=>{
     let ok = 0;
     PAIRS.forEach(p=>{
-      if (map.get(p.id) === p.id) ok++;
+      if(map.get(p.id) === p.id) ok++;
     });
-    document.querySelectorAll(".imgbox").forEach(t=>{
-      const correct = map.get(t.dataset.accept) === t.dataset.accept;
-      t.style.borderColor = correct ? "#10b981" : "#ef4444";
+    // feedback cadre des cartes gauche
+    document.querySelectorAll('.card.obj').forEach(card=>{
+      const id = [...pins.values()].find(v=>v.elCard===card && v.type==='obj').id;
+      const isOk = map.get(id) === id;
+      card.style.borderColor = isOk ? 'var(--ok)' : 'var(--ko)';
     });
-    if (ok === PAIRS.length) { $msg.textContent = "Bravo !"; $msg.className = "msg ok"; }
-    else { $msg.textContent = `${ok}/${PAIRS.length} correct(s)`; $msg.className = "msg ko"; }
+    $msg.textContent = (ok===PAIRS.length) ? 'Bravo ! Tout est correct 🎉' : `${ok}/${PAIRS.length} correct(s)`;
+    $msg.className = 'msg ' + (ok===PAIRS.length ? 'ok' : 'ko');
   });
 
-  // --- Reset
-  document.getElementById("reset").addEventListener("click", ()=>{
-    map.clear(); $msg.textContent = ""; $msg.className = "msg";
-    document.querySelectorAll(".imgbox").forEach(t=> t.style.borderColor = "#d1d5db");
+  document.getElementById('reset').addEventListener('click', ()=>{
+    map.clear();
+    $msg.textContent=''; $msg.className='msg';
+    document.querySelectorAll('.card').forEach(c=> c.style.borderColor='');
+    clearPreview();
+    if(startPin){ startPin.elPin.classList.remove('active'); startPin=null; }
     drawAll();
   });
 
+  // premier sizing
   resizeSVG();
 </script>
 </body>
