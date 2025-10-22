@@ -3,100 +3,93 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Relier (style D-FIL, images sans cadres)</title>
+<title>Relier images → mots (clic-clic, fond transparent)</title>
 <style>
-  :root{ --line:#111; --pin:#111; --gap:40px; }
-  *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-  body{margin:0; background:transparent; /* remplace par ton fond, ou #fff */
-        background-size:cover; color:#0f172a}
+  /* ---------- Réglages généraux ---------- */
+  html, body { margin:0; background:transparent !important; color:#0f172a; }
+  :root{
+    /* 1 = taille d’origine (réduite déjà par rapport à ta version) */
+    --scale: 1;
+    /* écart entre colonnes (suit la taille) */
+    --gap: calc(32px * var(--scale)); /* (avant : 40px) */
+  }
+  *{ box-sizing:border-box; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial }
 
-  .wrap{max-width:1100px;margin:auto;padding:24px}
-  h1{margin:0 0 16px;font-size:24px}
+  .wrap{ max-width:1100px; margin:auto; padding:24px; background:transparent; }
+  h1{ margin:0 0 16px; font-size:22px; font-weight:800; }
 
-  .stage{position:relative; display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); align-items:center}
-  .col{position:relative}
+  /* ---------- Plateau ---------- */
+  .stage{
+    position:relative;
+    display:grid; grid-template-columns:1fr 1fr; gap:var(--gap);
+    align-items:center; background:transparent;
+  }
+  .col{ position:relative; background:transparent; }
 
-  /* images “nues”, pas de cadre/ombre */
-  .item{position:relative; display:flex; align-items:center; gap:16px; margin:40px 0}
-  .img{width:260px; height:auto; display:block; background:transparent}
+  /* ---------- Items (images “nues”) ---------- */
+  .item{ position:relative; display:flex; align-items:center; gap:16px; margin:32px 0; }
+  .img{
+    width: calc(220px * var(--scale));   /* AVANT 260px → plus petit */
+    height:auto; display:block; background:transparent;
+  }
 
-  /* pastilles annulaire : anneau noir + cœur blanc */
-  .pin{position:absolute; width:22px; height:22px; border-radius:999px;
-       background:var(--pin); border:2px solid #fff; cursor:pointer}
-  .pin::after{content:""; position:absolute; inset:4px; background:#fff; border-radius:999px}
+  /* ---------- Pastilles (points) ---------- */
+  .pin{
+    position:absolute; border:0; padding:0; background:#111; cursor:pointer;
+    width:  calc(18px * var(--scale));    /* AVANT 22px */
+    height: calc(18px * var(--scale));    /* AVANT 22px */
+    border-radius:999px; border:2px solid #fff;
+  }
+  .pin::after{
+    content:""; position:absolute; inset: calc(3px * var(--scale)); /* AVANT 4px */
+    background:#fff; border-radius:999px;
+  }
+  .left  .pin{ right: calc(-9px * var(--scale)); top:50%; transform:translateY(-50%); }
+  .right .pin{ left:  calc(-9px * var(--scale)); top:50%; transform:translateY(-50%); }
+  .pin.active{ box-shadow:0 0 0 6px rgba(0,0,0,.15); }
 
-  /* place les pastilles côté intérieur */
-  .left  .pin{ right:-11px; top:50%; transform:translateY(-50%); }
-  .right .pin{ left:-11px;  top:50%; transform:translateY(-50%); }
-  .pin.active{box-shadow:0 0 0 5px rgba(0,0,0,.15)}
+  /* ---------- Lignes + embouts ---------- */
+  svg#links{ position:absolute; inset:0; pointer-events:none; }
+  line.seg{ stroke:#111; stroke-width: calc(6px * var(--scale)); stroke-linecap:round; } /* AVANT 7px */
+  circle.cap{ fill:#fff; stroke:#111; stroke-width: calc(2.5px * var(--scale)); }       /* AVANT 3px */
 
-  /* lignes + cap ronds style D-FIL */
-  svg#links{position:absolute; inset:0; pointer-events:none}
-  line.seg{stroke:var(--line); stroke-width:7; stroke-linecap:round}
-  circle.cap{fill:#fff; stroke:var(--line); stroke-width:3}
-
-  /* barre d’actions centrée */
-  .bar{display:flex; gap:12px; justify-content:center; align-items:center; margin-top:18px; flex-wrap:wrap}
-  button{border:0; border-radius:12px; padding:12px 18px; font-weight:800; cursor:pointer}
-  .danger{background:#e11d48; color:#fff} .primary{background:#1f51ff; color:#fff} .ghost{background:#e5e7eb}
-  .score{min-width:180px; text-align:center; font-weight:800}
+  /* ---------- Barre d’actions ---------- */
+  .bar{
+    display:flex; gap:12px; justify-content:center; align-items:center;
+    margin-top:16px; flex-wrap:wrap;
+  }
+  button{ border:0; border-radius:12px; padding:10px 16px; font-weight:800; cursor:pointer; }
+  .primary{ background:#1f51ff; color:#fff; }
+  .ghost{ background:#e5e7eb; }
+  .danger{ background:#e11d48; color:#fff; }
+  .score{ min-width:180px; text-align:center; font-weight:800; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Relie chaque image au bon mot</h1>
-  <style>
-  :root { --scale: 1; }                  /* 1 = taille d’origine */
+  <h1>Relie chaque image au bon mot/logo</h1>
 
-  /* images, pastilles, traits suivent --scale */
-  .img { width: calc(260px * var(--scale)); }
-
-  .pin {
-    width:  calc(22px * var(--scale));
-    height: calc(22px * var(--scale));
-  }
-  .pin::after { inset: calc(4px * var(--scale)); }
-
-  line.seg   { stroke-width: calc(7px * var(--scale)); }
-  circle.cap { stroke-width: calc(3px * var(--scale)); }
-
-  /* (optionnel) réduire/augmenter l’écart entre les deux colonnes */
-  :root { --gap: calc(40px * var(--scale)); }
-</style>
-
-
-  <!-- ========= CONFIG ========= -->
+  <!-- ========= CONFIG : remplace par TES fichiers dans /assets ========= -->
   <script>
-  // Remplace par TES PNG à fond transparent (ou URLs complètes)
+  // Colonne gauche (images objets/perso — PNG fond transparent recommandé)
   const LEFT = [
-    { img: "assets/markabon_p.png", title: "" },
-    { img: "assets/mi7fathaton_p.png", title: "" },
-    { img: "assets/mou3alimaton_p.png", title: "" },
+    { img: "assets/markabon_p.png", title:"" },
+    { img: "assets/mi7fathaton_p.png", title:"" },
+    { img: "assets/mou3alimaton_p.png", title:"" },
   ];
 
-  // Colonne droite : logos/mots (aussi des images)
+  // Colonne droite (images des mots/logos — également des PNG)
   const RIGHT = [
-    { img: "assets/mou3alimaton.png", title: "" },
-    { img: "assets/markabon.png", title: "" },
-    { img: "assets/mi7fathaton.png", title: "" },
+    { img: "assets/mou3alimaton.png", title:"" },
+    { img: "assets/markabon.png", title:"" },
+    { img: "assets/mi7fathaton.png", title:"" },
   ];
 
-  // exemple : perso1 -> logo2, perso2 -> logo1, perso3 -> logo3
+  // Solutions attendues [indexGauche, indexDroite]
+  // ex : perso1 -> logo2, perso2 -> logo1, perso3 -> logo3
   const SOLUTION = [[0,1],[1,2],[2,0]];
-</script>
-<script>
-// Taille via ?scale=0.9 dans l’URL
-(function initScaleFromURL(){
-  const qs  = new URLSearchParams(location.search);
-  const val = parseFloat(qs.get('scale'));
-  if (!isNaN(val) && val > 0.5 && val < 2) {
-    document.documentElement.style.setProperty('--scale', val);
-  }
-})();
-</script>
-
-
-  <!-- ========================= -->
+  </script>
+  <!-- ================================================================ -->
 
   <div class="stage" id="stage">
     <svg id="links" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
@@ -111,19 +104,30 @@
     <button id="reset" class="ghost">⟲ Recommencer</button>
   </div>
   <div class="bar"><div id="score" class="score">0 bonne réponse</div></div>
-  <div class="bar" id="tuner" style="display:none;">
-  <label>🔧 Taille :
-    <input id="scale" type="range" min="0.7" max="1.3" step="0.05" value="1">
-  </label>
-</div>
 
+  <!-- (Optionnel) Molette pour tests : masquée par défaut, visible avec ?tuner=1 -->
+  <div class="bar" id="tuner" style="display:none;">
+    <label>🔧 Taille :
+      <input id="scale" type="range" min="0.7" max="1.3" step="0.05" value="1">
+    </label>
+  </div>
 </div>
 
 <script>
+/* ---- Taille via ?scale=0.9 dans l’URL ---- */
+(function initScaleFromURL(){
+  const qs  = new URLSearchParams(location.search);
+  const val = parseFloat(qs.get('scale'));
+  if (!isNaN(val) && val > 0.5 && val < 2) {
+    document.documentElement.style.setProperty('--scale', val);
+  }
+})();
+
 /* ---- Construction ---- */
 const $stage=document.getElementById('stage'), $svg=document.getElementById('links');
 const $L=document.getElementById('colL'), $R=document.getElementById('colR');
 const pinsL=[], pinsR=[], links=new Map(), stack=[];
+
 function addItem(side, src){
   const box=document.createElement('div'); box.className='item';
   const img=document.createElement('img'); img.className='img'; img.src=src; img.alt="";
@@ -138,45 +142,102 @@ RIGHT.forEach(it=>addItem('R', it.img));
 
 /* ---- Géométrie ---- */
 function boardRect(){return $stage.getBoundingClientRect();}
-function center(el){const b=boardRect(), r=el.getBoundingClientRect(); return {x:r.left-b.left+r.width/2, y:r.top-b.top+r.height/2};}
-function setViewBox(){const r=boardRect(); $svg.setAttribute('viewBox', `0 0 ${r.width} ${r.height}`);}
+function center(el){
+  const b=boardRect(), r=el.getBoundingClientRect();
+  return {x:r.left-b.left+r.width/2, y:r.top-b.top+r.height/2};
+}
+function setViewBox(){
+  const r=boardRect(); $svg.setAttribute('viewBox', `0 0 ${r.width} ${r.height}`);
+}
 
 /* ---- Lignes ---- */
-function clearSVG(){while($svg.firstChild) $svg.firstChild.remove();}
+function clearSVG(){ while($svg.firstChild) $svg.firstChild.remove(); }
+
+function getScale(){
+  return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--scale')) || 1;
+}
+
 function lineWithCaps(a,b){
   const L=document.createElementNS('http://www.w3.org/2000/svg','line');
-  L.setAttribute('class','seg'); L.setAttribute('x1',a.x); L.setAttribute('y1',a.y); L.setAttribute('x2',b.x); L.setAttribute('y2',b.y);
-  const c1=document.createElementNS('http://www.w3.org/2000/svg','circle'); c1.setAttribute('class','cap'); c1.setAttribute('cx',a.x); c1.setAttribute('cy',a.y); c1.setAttribute('r',7);
-  const c2=document.createElementNS('http://www.w3.org/2000/svg','circle'); c2.setAttribute('class','cap'); c2.setAttribute('cx',b.x); c2.setAttribute('cy',b.y); c2.setAttribute('r',7);
+  L.setAttribute('class','seg');
+  L.setAttribute('x1',a.x); L.setAttribute('y1',a.y);
+  L.setAttribute('x2',b.x); L.setAttribute('y2',b.y);
+
+  const r = 6 * getScale();  // rayon des ronds d’extrémité (AVANT 7 → un peu plus petit)
+
+  const c1=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  c1.setAttribute('class','cap'); c1.setAttribute('cx',a.x); c1.setAttribute('cy',a.y); c1.setAttribute('r', r);
+
+  const c2=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  c2.setAttribute('class','cap'); c2.setAttribute('cx',b.x); c2.setAttribute('cy',b.y); c2.setAttribute('r', r);
+
   $svg.append(L,c1,c2);
 }
-function drawAll(){ setViewBox(); clearSVG(); links.forEach((R,L)=>{ lineWithCaps(center(pinsL[L]), center(pinsR[R])); }); }
+
+function drawAll(){
+  setViewBox(); clearSVG();
+  links.forEach((R,L)=>{ lineWithCaps(center(pinsL[L]), center(pinsR[R])); });
+}
 window.addEventListener('resize', drawAll);
 window.addEventListener('scroll', ()=>requestAnimationFrame(drawAll), {passive:true});
 
 /* ---- Interaction clic-clic ---- */
 let start=null;
 function onPin(side, idx, el){
-  if(!start){ start={side,idx,el}; el.classList.add('active'); return; }
-  if(start.side===side){ start.el.classList.remove('active'); start={side,idx,el}; el.classList.add('active'); return; }
+  if(!start){
+    start={side,idx,el}; el.classList.add('active'); return;
+  }
+  if(start.side===side){
+    start.el.classList.remove('active');
+    start={side,idx,el}; el.classList.add('active'); return;
+  }
   const L = (start.side==='L') ? start.idx : idx;
   const R = (start.side==='R') ? start.idx : idx;
-  if(links.has(L)){ for(let i=stack.length-1;i>=0;i--){ if(stack[i][0]===L){ stack.splice(i,1); break; } } }
+
+  // (Option) empêcher 2 gauches vers le même R → décommente si tu veux du 1-à-1 strict
+  // for(const [l,r] of links.entries()){ if(r===R) links.delete(l); }
+
+  if(links.has(L)){ // remplace la liaison existante pour ce L
+    for(let i=stack.length-1;i>=0;i--){ if(stack[i][0]===L){ stack.splice(i,1); break; } }
+  }
   links.set(L,R); stack.push([L,R]);
+
   start.el.classList.remove('active'); start=null; drawAll();
 }
 pinsL.forEach((p,i)=>p.addEventListener('click',()=>onPin('L',i,p)));
 pinsR.forEach((p,i)=>p.addEventListener('click',()=>onPin('R',i,p)));
-document.addEventListener('click',e=>{ if(start && !e.target.classList.contains('pin')){ start.el.classList.remove('active'); start=null; }});
+document.addEventListener('click',e=>{
+  if(start && !e.target.classList.contains('pin')){
+    start.el.classList.remove('active'); start=null;
+  }
+});
 
 /* ---- Actions ---- */
 const $score=document.getElementById('score');
-document.getElementById('undo').addEventListener('click',()=>{ const last=stack.pop(); if(last){ const [L]=last; links.delete(L); drawAll(); }});
-document.getElementById('reset').addEventListener('click',()=>{ stack.length=0; links.clear(); $score.textContent='0 bonne réponse'; drawAll(); });
+document.getElementById('undo').addEventListener('click',()=>{
+  const last=stack.pop(); if(last){ const [L]=last; links.delete(L); drawAll(); }
+});
+document.getElementById('reset').addEventListener('click',()=>{
+  stack.length=0; links.clear(); $score.textContent='0 bonne réponse'; drawAll();
+});
 document.getElementById('check').addEventListener('click',()=>{
   let ok=0; SOLUTION.forEach(([L,R])=>{ if(links.get(L)===R) ok++; });
   $score.textContent = `${ok}/${SOLUTION.length} bonne(s) réponse(s)`;
 });
+
+/* ---- Tuner (molette) visible si ?tuner=1 ---- */
+(function initTuner(){
+  const show = new URLSearchParams(location.search).get('tuner') === '1';
+  if (!show) return;
+  const wrap = document.getElementById('tuner');
+  wrap.style.display = 'flex';
+  const input = document.getElementById('scale');
+  const current = getScale(); input.value = current;
+  input.addEventListener('input', () => {
+    document.documentElement.style.setProperty('--scale', input.value);
+    drawAll();
+  });
+})();
 </script>
 </body>
 </html>
