@@ -901,8 +901,8 @@ lib.properties = {
 	color: "#FFFFFF",
 	opacity: 1.00,
 	manifest: [
-		{src:"images/bitmap10.jpg", id:"bitmap10"},
-		{src:"images/bitmap15.jpg", id:"bitmap15"}
+		{src:"assets/mou3alimaton_p.jpg", id:"mou3alimaton"},
+		{src:"assets/markabon_p.jpg", id:"markabon"}
 	],
 	preloads: []
 };
