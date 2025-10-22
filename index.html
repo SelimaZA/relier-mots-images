@@ -3,170 +3,139 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Relier par des lignes</title>
+<title>Relier (style D-FIL, images sans cadres)</title>
 <style>
-  :root{
-    --gap:18px; --radius:18px; --shadow:0 6px 20px rgba(0,0,0,.08);
-    --pin:#111; --line:#2b6ff0; --ok:#10b981; --ko:#ef4444;
-    --left-bg:#f7fbff; --right-bg:#fff7fb; --left-b:#93c5fd; --right-b:#f9a8d4;
-  }
+  :root{ --line:#111; --pin:#111; --gap:40px; }
   *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-  body{margin:0;background:#f6f8fb;color:#0f172a}
-  .wrap{max-width:1200px;margin:auto;padding:22px}
-  h1{margin:0 0 14px;font-size:22px}
+  body{margin:0; background:#f2ecda; /* remplace par ton fond, ou #fff */
+        background-size:cover; color:#0f172a}
 
-  .board{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);align-items:start}
-  .col{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
-  .col.left  {background:var(--left-bg); border:2px solid var(--left-b)}
-  .col.right {background:var(--right-bg);border:2px solid var(--right-b)}
-  .list{display:grid;grid-template-columns:1fr;gap:12px}
+  .wrap{max-width:1100px;margin:auto;padding:24px}
+  h1{margin:0 0 16px;font-size:24px}
 
-  .card{position:relative;display:flex;align-items:center;gap:10px;
-        padding:10px;border-radius:14px;background:#fff;box-shadow:var(--shadow);min-height:110px}
-  .thumb{width:180px;height:120px;background:#fff;border-radius:10px;overflow:hidden;
-         display:flex;align-items:center;justify-content:center;border:1px solid #e5e7eb}
-  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-  .label{font-weight:700}
+  .stage{position:relative; display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); align-items:center}
+  .col{position:relative}
 
-  /* pastilles "face à face" */
-  .pin{position:absolute;top:50%;transform:translateY(-50%);width:18px;height:18px;border-radius:999px;
-       background:var(--pin);border:3px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.1);cursor:pointer}
-  .pin.left  { right:-9px; left:auto; }   /* à DROITE des cartes de gauche */
-  .pin.right { left:-9px;  right:auto; }  /* à GAUCHE des cartes de droite */
-  .pin.active{box-shadow:0 0 0 4px rgba(43,111,240,.28)}
+  /* images “nues”, pas de cadre/ombre */
+  .item{position:relative; display:flex; align-items:center; gap:16px; margin:40px 0}
+  .img{width:260px; height:auto; display:block; background:transparent}
 
-  svg#links{position:absolute;inset:0;pointer-events:none}
-  line.seg{stroke:var(--line);stroke-width:3;stroke-linecap:round}
-  circle.cap{fill:#fff;stroke:var(--line);stroke-width:2}
+  /* pastilles annulaire : anneau noir + cœur blanc */
+  .pin{position:absolute; width:22px; height:22px; border-radius:999px;
+       background:var(--pin); border:2px solid #fff; cursor:pointer}
+  .pin::after{content:""; position:absolute; inset:4px; background:#fff; border-radius:999px}
+
+  /* place les pastilles côté intérieur */
+  .left  .pin{ right:-11px; top:50%; transform:translateY(-50%); }
+  .right .pin{ left:-11px;  top:50%; transform:translateY(-50%); }
+  .pin.active{box-shadow:0 0 0 5px rgba(0,0,0,.15)}
+
+  /* lignes + cap ronds style D-FIL */
+  svg#links{position:absolute; inset:0; pointer-events:none}
+  line.seg{stroke:var(--line); stroke-width:7; stroke-linecap:round}
+  circle.cap{fill:#fff; stroke:var(--line); stroke-width:3}
 
   /* barre d’actions centrée */
-  .bar{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:18px;flex-wrap:wrap}
-  button{border:0;border-radius:12px;padding:12px 18px;font-weight:800;cursor:pointer;box-shadow:var(--shadow)}
-  .danger{background:#e11d48;color:#fff}
-  .primary{background:#1f51ff;color:#fff}
-  .ghost{background:#e5e7eb}
-  .msg{font-weight:800;min-width:180px;text-align:center}
-
-  .toast{position:fixed;right:18px;bottom:18px;z-index:50;padding:12px 16px;border-radius:12px;
-         color:#fff;font-weight:800;box-shadow:var(--shadow);display:none}
-  .toast.ok{background:var(--ok)} .toast.ko{background:var(--ko)}
+  .bar{display:flex; gap:12px; justify-content:center; align-items:center; margin-top:18px; flex-wrap:wrap}
+  button{border:0; border-radius:12px; padding:12px 18px; font-weight:800; cursor:pointer}
+  .danger{background:#e11d48; color:#fff} .primary{background:#1f51ff; color:#fff} .ghost{background:#e5e7eb}
+  .score{min-width:180px; text-align:center; font-weight:800}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Relie chaque image au bon mot/logo</h1>
+  <h1>Relie chaque image au bon logo</h1>
 
-  <!-- ========= CONFIG (images & solution) ========= -->
+  <!-- ========= CONFIG ========= -->
   <script>
-  // Remplace ces URLs par tes fichiers (ex: "assets/monimage.png")
+  // Remplace par TES PNG à fond transparent (ou URLs complètes)
   const LEFT = [
-    { title: "Objet 1", img: "https://picsum.photos/seed/gauche1/300/200" },
-    { title: "Objet 2", img: "https://picsum.photos/seed/gauche2/300/200" },
-    { title: "Objet 3", img: "https://picsum.photos/seed/gauche3/300/200" },
+    { img: "https://raw.githubusercontent.com/enchants/example-assets/main/dfil/incredibles-boy.png", title:"" },
+    { img: "https://raw.githubusercontent.com/enchants/example-assets/main/dfil/cars-lightning.png",   title:"" },
+    { img: "https://raw.githubusercontent.com/enchants/example-assets/main/dfil/up-characters.png",   title:"" },
   ];
   const RIGHT = [
-    { title: "Mot 1", img: "https://picsum.photos/seed/droite1/300/200" },
-    { title: "Mot 2", img: "https://picsum.photos/seed/droite2/300/200" },
-    { title: "Mot 3", img: "https://picsum.photos/seed/droite3/300/200" },
+    { img: "https://raw.githubusercontent.com/enchants/example-assets/main/dfil/logo-cars.png",        title:"" },
+    { img: "https://raw.githubusercontent.com/enchants/example-assets/main/dfil/logo-incredibles.png", title:"" },
+    { img: "https://raw.githubusercontent.com/enchants/example-assets/main/dfil/logo-up.png",          title:"" },
   ];
-  // Correspondances correctes : [indexGauche, indexDroite]
-  const SOLUTION = [[0,0],[1,1],[2,2]];
-
-  const TEXTS = {
-    removeLast: "Supprimer la dernière ligne",
-    validate  : "Valider",
-    reset     : "Recommencer",
-    scoreZero : "0 bonne réponse",
-    youWin    : "Gagné",
-    youLose   : "Erreur"
-  };
-  const FEEDBACK = { ok:"", ko:"" }; // GIFs optionnels
+  // correspondances correctes : [indexGauche, indexDroite]
+  const SOLUTION = [[0,1],[1,0],[2,2]];
   </script>
-  <!-- ============================================ -->
+  <!-- ========================= -->
 
-  <div class="board" id="board">
+  <div class="stage" id="stage">
     <svg id="links" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
-    <div class="col left"><div id="leftList" class="list"></div></div>
-    <div class="col right"><div id="rightList" class="list"></div></div>
+
+    <div class="col left"  id="colL"></div>
+    <div class="col right" id="colR"></div>
   </div>
 
   <div class="bar">
-    <button id="btnUndo"  class="danger">✖︎ <span id="tRemove"></span></button>
-    <button id="btnCheck" class="primary">✔︎ <span id="tValidate"></span></button>
-    <button id="btnReset" class="ghost">⟲ <span id="tReset"></span></button>
+    <button id="undo"  class="danger">✖︎ Supprimer la dernière ligne</button>
+    <button id="check" class="primary">✔︎ Valider</button>
+    <button id="reset" class="ghost">⟲ Recommencer</button>
   </div>
-  <div id="score" class="msg"></div>
+  <div class="bar"><div id="score" class="score">0 bonne réponse</div></div>
 </div>
 
-<div id="toastOk" class="toast ok"></div>
-<div id="toastKo" class="toast ko"></div>
-
 <script>
-/* === éléments & état === */
-const $board=document.getElementById('board'), $svg=document.getElementById('links');
-const $left=document.getElementById('leftList'), $right=document.getElementById('rightList');
-const $score=document.getElementById('score'), $tOk=document.getElementById('toastOk'), $tKo=document.getElementById('toastKo');
-document.getElementById('tRemove').textContent=TEXTS.removeLast;
-document.getElementById('tValidate').textContent=TEXTS.validate;
-document.getElementById('tReset').textContent=TEXTS.reset; $score.textContent=TEXTS.scoreZero;
-$tOk.textContent=TEXTS.youWin; $tKo.textContent=TEXTS.youLose;
-
-const pinsLeft=[], pinsRight=[], stack=[], links=new Map();
-function boardRect(){return $board.getBoundingClientRect()}
-function center(el){const b=boardRect(),r=el.getBoundingClientRect();return{x:r.left-b.left+r.width/2,y:r.top-b.top+r.height/2}}
-function setViewBox(){const r=boardRect();$svg.setAttribute('viewBox',`0 0 ${r.width} ${r.height}`)}
-function makeCard(item,side,idx){
-  const card=document.createElement('div');card.className='card';
-  const box=document.createElement('div');box.className='thumb';
-  const img=document.createElement('img');img.src=item.img;img.alt=item.title;box.appendChild(img);
-  const label=document.createElement('div');label.className='label';label.textContent=`P${idx}  ${item.title}`;
-  const pin=document.createElement('button');pin.type='button';pin.className='pin '+(side==='left'?'left':'right');
-  card.append(box,label,pin); return {card,pin,img};
+/* ---- Construction ---- */
+const $stage=document.getElementById('stage'), $svg=document.getElementById('links');
+const $L=document.getElementById('colL'), $R=document.getElementById('colR');
+const pinsL=[], pinsR=[], links=new Map(), stack=[];
+function addItem(side, src){
+  const box=document.createElement('div'); box.className='item';
+  const img=document.createElement('img'); img.className='img'; img.src=src; img.alt="";
+  const pin=document.createElement('button'); pin.type='button'; pin.className='pin';
+  box.append(img,pin);
+  if(side==='L'){ $L.appendChild(box); pinsL.push(pin); }
+  else         { $R.appendChild(box); pinsR.push(pin); }
+  img.addEventListener('load', drawAll);
 }
-LEFT.forEach((it,i)=>{const {card,pin,img}=makeCard(it,'left',i);$left.appendChild(card);pinsLeft.push(pin);img.addEventListener('load',drawAll);});
-RIGHT.forEach((it,i)=>{const {card,pin,img}=makeCard(it,'right',i);$right.appendChild(card);pinsRight.push(pin);img.addEventListener('load',drawAll);});
-setViewBox();
+LEFT .forEach(it=>addItem('L', it.img));
+RIGHT.forEach(it=>addItem('R', it.img));
 
-/* === interaction clic-clic === */
-let start=null;
-function selectPin(side,index,el){
-  if(!start){start={side,index,el};el.classList.add('active');return;}
-  if(start.side===side){start.el.classList.remove('active');start={side,index,el};el.classList.add('active');return;}
-  const L=(start.side==='left')?start.index:index;
-  const R=(start.side==='right')?start.index:index;
-  if(links.has(L)){for(let s=stack.length-1;s>=0;s--){if(stack[s][0]===L){stack.splice(s,1);break;}}}
-  links.set(L,R); stack.push([L,R]); start.el.classList.remove('active'); start=null; drawAll();
-}
-pinsLeft.forEach((p,i)=>p.addEventListener('click',()=>selectPin('left',i,p)));
-pinsRight.forEach((p,i)=>p.addEventListener('click',()=>selectPin('right',i,p)));
-document.addEventListener('click',(e)=>{if(start && !e.target.classList.contains('pin')){start.el.classList.remove('active');start=null}});
+/* ---- Géométrie ---- */
+function boardRect(){return $stage.getBoundingClientRect();}
+function center(el){const b=boardRect(), r=el.getBoundingClientRect(); return {x:r.left-b.left+r.width/2, y:r.top-b.top+r.height/2};}
+function setViewBox(){const r=boardRect(); $svg.setAttribute('viewBox', `0 0 ${r.width} ${r.height}`);}
 
-/* === dessin === */
-function clearSVG(){while($svg.firstChild)$svg.firstChild.remove()}
+/* ---- Lignes ---- */
+function clearSVG(){while($svg.firstChild) $svg.firstChild.remove();}
 function lineWithCaps(a,b){
-  const L=document.createElementNS('http://www.w3.org/2000/svg','line');L.setAttribute('class','seg');
-  L.setAttribute('x1',a.x);L.setAttribute('y1',a.y);L.setAttribute('x2',b.x);L.setAttribute('y2',b.y);
-  const c1=document.createElementNS('http://www.w3.org/2000/svg','circle');c1.setAttribute('class','cap');c1.setAttribute('cx',a.x);c1.setAttribute('cy',a.y);c1.setAttribute('r',6);
-  const c2=document.createElementNS('http://www.w3.org/2000/svg','circle');c2.setAttribute('class','cap');c2.setAttribute('cx',b.x);c2.setAttribute('cy',b.y);c2.setAttribute('r',6);
+  const L=document.createElementNS('http://www.w3.org/2000/svg','line');
+  L.setAttribute('class','seg'); L.setAttribute('x1',a.x); L.setAttribute('y1',a.y); L.setAttribute('x2',b.x); L.setAttribute('y2',b.y);
+  const c1=document.createElementNS('http://www.w3.org/2000/svg','circle'); c1.setAttribute('class','cap'); c1.setAttribute('cx',a.x); c1.setAttribute('cy',a.y); c1.setAttribute('r',7);
+  const c2=document.createElementNS('http://www.w3.org/2000/svg','circle'); c2.setAttribute('class','cap'); c2.setAttribute('cx',b.x); c2.setAttribute('cy',b.y); c2.setAttribute('r',7);
   $svg.append(L,c1,c2);
 }
-function drawAll(){setViewBox();clearSVG();links.forEach((R,L)=>{const a=center(pinsLeft[L]),b=center(pinsRight[R]);lineWithCaps(a,b);});}
-window.addEventListener('resize',drawAll);window.addEventListener('scroll',()=>requestAnimationFrame(drawAll),{passive:true});
+function drawAll(){ setViewBox(); clearSVG(); links.forEach((R,L)=>{ lineWithCaps(center(pinsL[L]), center(pinsR[R])); }); }
+window.addEventListener('resize', drawAll);
+window.addEventListener('scroll', ()=>requestAnimationFrame(drawAll), {passive:true});
 
-/* === actions === */
-document.getElementById('btnUndo').addEventListener('click',()=>{const last=stack.pop();if(last){const[L]=last;links.delete(L);drawAll();}});
-document.getElementById('btnReset').addEventListener('click',()=>{stack.length=0;links.clear();drawAll();$score.textContent=TEXTS.scoreZero;});
-document.getElementById('btnCheck').addEventListener('click',()=>{
-  let ok=0; SOLUTION.forEach(([L,R])=>{if(links.get(L)===R) ok++;});
-  $score.textContent=`${ok}/${SOLUTION.length} bonne(s) réponse(s)`;
-  const show=t=>{t.style.display='block';setTimeout(()=>t.style.display='none',1800);}
-  if(ok===SOLUTION.length){
-    if(FEEDBACK.ok){$tOk.style.backgroundImage='url('+FEEDBACK.ok+')';$tOk.style.backgroundSize='cover';$tOk.textContent='';}
-    else{$tOk.textContent=TEXTS.youWin;} show($tOk);
-  }else{
-    if(FEEDBACK.ko){$tKo.style.backgroundImage='url('+FEEDBACK.ko+')';$tKo.style.backgroundSize='cover';$tKo.textContent='';}
-    else{$tKo.textContent=TEXTS.youLose;} show($tKo);
-  }
+/* ---- Interaction clic-clic ---- */
+let start=null;
+function onPin(side, idx, el){
+  if(!start){ start={side,idx,el}; el.classList.add('active'); return; }
+  if(start.side===side){ start.el.classList.remove('active'); start={side,idx,el}; el.classList.add('active'); return; }
+  const L = (start.side==='L') ? start.idx : idx;
+  const R = (start.side==='R') ? start.idx : idx;
+  if(links.has(L)){ for(let i=stack.length-1;i>=0;i--){ if(stack[i][0]===L){ stack.splice(i,1); break; } } }
+  links.set(L,R); stack.push([L,R]);
+  start.el.classList.remove('active'); start=null; drawAll();
+}
+pinsL.forEach((p,i)=>p.addEventListener('click',()=>onPin('L',i,p)));
+pinsR.forEach((p,i)=>p.addEventListener('click',()=>onPin('R',i,p)));
+document.addEventListener('click',e=>{ if(start && !e.target.classList.contains('pin')){ start.el.classList.remove('active'); start=null; }});
+
+/* ---- Actions ---- */
+const $score=document.getElementById('score');
+document.getElementById('undo').addEventListener('click',()=>{ const last=stack.pop(); if(last){ const [L]=last; links.delete(L); drawAll(); }});
+document.getElementById('reset').addEventListener('click',()=>{ stack.length=0; links.clear(); $score.textContent='0 bonne réponse'; drawAll(); });
+document.getElementById('check').addEventListener('click',()=>{
+  let ok=0; SOLUTION.forEach(([L,R])=>{ if(links.get(L)===R) ok++; });
+  $score.textContent = `${ok}/${SOLUTION.length} bonne(s) réponse(s)`;
 });
 </script>
 </body>
