@@ -53,35 +53,19 @@
 
   <!-- ========= CONFIG (images & solution) ========= -->
   <script>
-  // Colonne gauche (objets)
-  const LEFT = [
-    { title: "Panda", img: "https://images.unsplash.com/photo-1546182990-dffeafbe841d?auto=format&fit=crop&w=900&q=60" },
-    { title: "Voiture", img: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=60" },
-    { title: "Pizza", img: "https://images.unsplash.com/photo-1548365328-9f547fb09535?auto=format&fit=crop&w=900&q=60" }
-  ];
-  // Colonne droite (mots/“logos” sous forme d’autres images du même thème)
-  const RIGHT = [
-    { title: "Panda (2)", img: "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=900&q=60" },
-    { title: "Voiture (2)", img: "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=900&q=60" },
-    { title: "Pizza (2)", img: "https://images.unsplash.com/photo-1601924582971-bf30b8c9a6b6?auto=format&fit=crop&w=900&q=60" }
-  ];
-  // Correspondances correctes (indices) : P0→D0, P1→D1, P2→D2
-  const SOLUTION = [[0,0],[1,1],[2,2]];
+const LEFT = [
+  { title: "Objet 1", img: "https://picsum.photos/seed/gauche1/300/200" },
+  { title: "Objet 2", img: "https://picsum.photos/seed/gauche2/300/200" },
+  { title: "Objet 3", img: "https://picsum.photos/seed/gauche3/300/200" },
+];
+const RIGHT = [
+  { title: "Mot 1", img: "https://picsum.photos/seed/droite1/300/200" },
+  { title: "Mot 2", img: "https://picsum.photos/seed/droite2/300/200" },
+  { title: "Mot 3", img: "https://picsum.photos/seed/droite3/300/200" },
+];
+const SOLUTION = [[0,0],[1,1],[2,2]];
+</script>
 
-  const TEXTS = {
-    removeLast: "Supprimer la dernière ligne",
-    validate  : "Valider",
-    reset     : "Recommencer",
-    scoreZero : "0 bonne réponse",
-    youWin    : "Gagné",
-    youLose   : "Erreur"
-  };
-  // GIFs optionnels (laisse "" pour désactiver)
-  const FEEDBACK = {
-    ok: "",
-    ko: ""
-  };
-  </script>
   <!-- ============================================ -->
 
   <div class="board" id="board">
