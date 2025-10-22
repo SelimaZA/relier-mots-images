@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Relier par des lignes – modèle autonome</title>
+<title>Relier par des lignes – démo images libres</title>
 <style>
   :root{
     --gap:18px; --radius:18px; --shadow:0 6px 20px rgba(0,0,0,.08);
@@ -49,29 +49,25 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Relie chaque image au bon mot/logo</h1>
+  <h1>Relie chaque image de gauche à la bonne image de droite</h1>
 
-  <!-- ======= CONFIG — ÉDITE ICI UNIQUEMENT ======= -->
+  <!-- ========= CONFIG (images & solution) ========= -->
   <script>
-  // Colonne gauche (images d’objets)
+  // Colonne gauche (objets)
   const LEFT = [
-    { title: "Objet 1", img: "assets/left1.png" },
-    { title: "Objet 2", img: "assets/left2.png" },
-    { title: "Objet 3", img: "assets/left3.png" },
+    { title: "Panda", img: "https://images.unsplash.com/photo-1546182990-dffeafbe841d?auto=format&fit=crop&w=900&q=60" },
+    { title: "Voiture", img: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=60" },
+    { title: "Pizza", img: "https://images.unsplash.com/photo-1548365328-9f547fb09535?auto=format&fit=crop&w=900&q=60" }
   ];
-  // Colonne droite (mots-images / logos)
+  // Colonne droite (mots/“logos” sous forme d’autres images du même thème)
   const RIGHT = [
-    { title: "Mot 1", img: "assets/right1.png" },
-    { title: "Mot 2", img: "assets/right2.png" },
-    { title: "Mot 3", img: "assets/right3.png" },
+    { title: "Panda (2)", img: "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=900&q=60" },
+    { title: "Voiture (2)", img: "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=900&q=60" },
+    { title: "Pizza (2)", img: "https://images.unsplash.com/photo-1601924582971-bf30b8c9a6b6?auto=format&fit=crop&w=900&q=60" }
   ];
-  // Correspondances correctes : [indexGauche, indexDroite]
-  const SOLUTION = [
-    [0,1],
-    [1,0],
-    [2,2],
-  ];
-  // Textes & feedback (GIFs optionnels)
+  // Correspondances correctes (indices) : P0→D0, P1→D1, P2→D2
+  const SOLUTION = [[0,0],[1,1],[2,2]];
+
   const TEXTS = {
     removeLast: "Supprimer la dernière ligne",
     validate  : "Valider",
@@ -80,16 +76,16 @@
     youWin    : "Gagné",
     youLose   : "Erreur"
   };
+  // GIFs optionnels (laisse "" pour désactiver)
   const FEEDBACK = {
-    ok: "assets/win.gif",   // ou "" pour désactiver
-    ko: "assets/error.gif"
+    ok: "",
+    ko: ""
   };
   </script>
   <!-- ============================================ -->
 
   <div class="board" id="board">
     <svg id="links" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
-
     <div class="col left"><div id="leftList" class="list"></div></div>
     <div class="col right"><div id="rightList" class="list"></div></div>
   </div>
@@ -123,7 +119,7 @@ function makeCard(item,side,idx){
   const card=document.createElement('div');card.className='card';
   const box=document.createElement('div');box.className='thumb';
   const img=document.createElement('img');img.src=item.img;img.alt=item.title;box.appendChild(img);
-  const label=document.createElement('div');label.className='label';label.textContent=`P${idx} ${item.title}`;
+  const label=document.createElement('div');label.className='label';label.textContent=`P${idx}  ${item.title}`;
   const pin=document.createElement('button');pin.type='button';pin.className='pin '+(side==='left'?'left':'right');
   card.append(box,label,pin); return {card,pin,img};
 }
@@ -138,7 +134,7 @@ function selectPin(side,index,el){
   if(start.side===side){start.el.classList.remove('active');start={side,index,el};el.classList.add('active');return;}
   const L=(start.side==='left')?start.index:index;
   const R=(start.side==='right')?start.index:index;
-  if(links.has(L)){const prevR=links.get(L);for(let s=stack.length-1;s>=0;s--){if(stack[s][0]===L){stack.splice(s,1);break;}}}
+  if(links.has(L)){for(let s=stack.length-1;s>=0;s--){if(stack[s][0]===L){stack.splice(s,1);break;}}}
   links.set(L,R); stack.push([L,R]); start.el.classList.remove('active'); start=null; drawAll();
 }
 pinsLeft.forEach((p,i)=>p.addEventListener('click',()=>selectPin('left',i,p)));
@@ -173,5 +169,13 @@ document.getElementById('btnCheck').addEventListener('click',()=>{
   }
 });
 </script>
+
+<!-- barre d’actions -->
+<div style="position:fixed;left:22px;bottom:22px;display:flex;gap:12px;flex-wrap:wrap">
+  <button id="btnUndo"  class="danger">✖︎ Supprimer la dernière ligne</button>
+  <button id="btnCheck" class="primary">✔︎ Valider</button>
+  <button id="btnReset" class="ghost">⟲ Recommencer</button>
+  <div id="score" class="msg" style="color:#0f172a;font-weight:800;margin-left:12px">0 bonne réponse</div>
+</div>
 </body>
 </html>
